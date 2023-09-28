@@ -77,9 +77,7 @@ class AuthApi @Inject constructor(
                 })
                 .build()
         )
-        Timber.i("***username request:", " ${call.request().body.toString()}")
         val response = call.await()
-        Timber.i("***Response:", "$response")
         return response.result("Error calling /username") { }
     }
 
@@ -114,12 +112,6 @@ class AuthApi @Inject constructor(
                 .method("POST", jsonRequestBody {})
                 .build()
         )
-        val request = Request.Builder()
-            .url("$BASE_URL/getKeys")
-            .addHeader("Cookie", formatCookie(sessionId))
-            .method("POST", jsonRequestBody {})
-            .build()
-
         val response = call.await()
         return response.result("Error calling /getKeys") {
             parseUserCredentials(body ?: throw ApiException("Empty response from /getKeys"))
@@ -519,7 +511,7 @@ class AuthApi @Inject constructor(
                 reader.endObject()
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Cannot parse the error: $errorString", e)
+            Timber.tag(TAG).e(e, "Cannot parse the error: %s", errorString)
             // Don't throw; this method is called during throwing.
         }
         return ""
