@@ -16,10 +16,10 @@
 
 package com.example.android.fido2.api
 
+import android.annotation.SuppressLint
 import android.util.JsonReader
 import android.util.JsonToken
 import android.util.JsonWriter
-import android.util.Log
 import com.example.android.fido2.BuildConfig
 import com.example.android.fido2.decodeBase64
 import com.example.android.fido2.toBase64
@@ -35,6 +35,11 @@ import com.google.android.gms.fido.fido2.api.common.PublicKeyCredentialRequestOp
 import com.google.android.gms.fido.fido2.api.common.PublicKeyCredentialRpEntity
 import com.google.android.gms.fido.fido2.api.common.PublicKeyCredentialType
 import com.google.android.gms.fido.fido2.api.common.PublicKeyCredentialUserEntity
+import com.localebro.okhttpprofiler.OkHttpProfilerInterceptor
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -42,16 +47,29 @@ import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.ResponseBody
-import okhttp3.internal.wait
 import ru.gildor.coroutines.okhttp.await
 import timber.log.Timber
 import java.io.StringReader
 import java.io.StringWriter
 import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Interacts with the server API.
  */
+
+//@InstallIn(SingletonComponent::class)
+//@Module
+//object ApiModule {
+//    @Provides
+//    @Singleton
+//    fun getClient(): OkHttpClient {
+//            return OkHttpClient.Builder()
+//                .addInterceptor(OkHttpProfilerInterceptor())
+//                .build()
+//        }
+//}
+
 class AuthApi @Inject constructor(
     private val client: OkHttpClient
 ) {
@@ -68,9 +86,11 @@ class AuthApi @Inject constructor(
      * @return The Session ID.
      */
     suspend fun username(username: String): ApiResult<Unit> {
-        Timber.i("***client:", client.toString())
-        val call = client.newCall(
-            Request.Builder()
+
+        val call =
+            //ApiModule.getClient().newCall(
+            client.newCall(
+                Request.Builder()
                 .url("$BASE_URL/username")
                 .method("POST", jsonRequestBody {
                     name("username").value(username)
@@ -86,8 +106,11 @@ class AuthApi @Inject constructor(
      * @param password A password.
      * @return An [ApiResult].Fwelcom
      */
+    @SuppressLint("TimberArgCount")
     suspend fun password(sessionId: String, password: String): ApiResult<Unit> {
-        val call = client.newCall(
+        val call =
+            //ApiModule.getClient().newCall(
+            client.newCall(
             Request.Builder()
                 .url("$BASE_URL/password")
                 .addHeader("Cookie", formatCookie(sessionId))
@@ -97,7 +120,7 @@ class AuthApi @Inject constructor(
                 .build()
         )
         val response = call.await()
-        return response.result("Error calling /password") { }
+        return response.result("Error calling /password") {}
     }
 
     /**
@@ -105,7 +128,9 @@ class AuthApi @Inject constructor(
      * @return A list of all the credentials registered on the server.
      */
     suspend fun getKeys(sessionId: String): ApiResult<List<Credential>> {
-        val call = client.newCall(
+        val call =
+            //ApiModule.getClient().newCall(
+            client.newCall(
             Request.Builder()
                 .url("$BASE_URL/getKeys")
                 .addHeader("Cookie", formatCookie(sessionId))
@@ -125,8 +150,10 @@ class AuthApi @Inject constructor(
      * be sent back to the server in [registerResponse].
      */
     suspend fun registerRequest(sessionId: String): ApiResult<PublicKeyCredentialCreationOptions> {
-        val call = client.newCall(
-            Request.Builder()
+        val call =
+            //ApiModule.getClient().newCall(
+            client.newCall(
+                Request.Builder()
                 .url("$BASE_URL/registerRequest")
                 .addHeader("Cookie", formatCookie(sessionId))
                 .method("POST", jsonRequestBody {
@@ -159,8 +186,10 @@ class AuthApi @Inject constructor(
         val rawId = credential.rawId.toBase64()
         val response = credential.response as AuthenticatorAttestationResponse
 
-        val call = client.newCall(
-            Request.Builder()
+        val call =
+            //ApiModule.getClient().newCall(
+            client.newCall(
+                Request.Builder()
                 .url("$BASE_URL/registerResponse")
                 .addHeader("Cookie", formatCookie(sessionId))
                 .method("POST", jsonRequestBody {
@@ -191,8 +220,10 @@ class AuthApi @Inject constructor(
      * @param credentialId The credential ID to be removed.
      */
     suspend fun removeKey(sessionId: String, credentialId: String): ApiResult<Unit> {
-        val call = client.newCall(
-            Request.Builder()
+        val call =
+            //ApiModule.getClient().newCall(
+            client.newCall(
+                Request.Builder()
                 .url("$BASE_URL/removeKey?credId=$credentialId")
                 .addHeader("Cookie", formatCookie(sessionId))
                 .method("POST", jsonRequestBody {})
@@ -213,8 +244,10 @@ class AuthApi @Inject constructor(
         sessionId: String,
         credentialId: String?
     ): ApiResult<PublicKeyCredentialRequestOptions> {
-        val call = client.newCall(
-            Request.Builder()
+        val call =
+            //ApiModule.getClient().newCall(
+            client.newCall(
+                Request.Builder()
                 .url(
                     buildString {
                         append("$BASE_URL/signinRequest")
@@ -248,7 +281,9 @@ class AuthApi @Inject constructor(
         val rawId = credential.rawId.toBase64()
         val response = credential.response as AuthenticatorAssertionResponse
 
-        val call = client.newCall(
+        val call =
+            //ApiModule.getClient().newCall(
+            client.newCall(
             Request.Builder()
                 .url("$BASE_URL/signinResponse")
                 .addHeader("Cookie", formatCookie(sessionId))
@@ -441,6 +476,7 @@ class AuthApi @Inject constructor(
             writer.body()
             writer.endObject()
         }
+        val out = output.toString().toRequestBody(JSON)
         return output.toString().toRequestBody(JSON)
     }
 
